@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>FileShare</title>
+    <script>
+        function uploadFiles() {
+            let files = document.getElementById("files").files;
+            for (let i = 0; i < files.length; i++) {
+                uploadFile(files[i])
+            }
+        }
+
+        function uploadFile(file) {
+            let el = document.createElement("div")
+            el.innerHTML = "<span>0%</span> " + file.name
+            document.getElementById("uploadList").appendChild(el);
+
+            let form = new FormData();
+            form.append("myFile", file);
+            let ajax = new XMLHttpRequest();
+            ajax.upload.addEventListener("progress", progressHandler(el), false);
+            ajax.addEventListener("load", completeHandler(el), false);
+            ajax.addEventListener("error", errorHandler(el), false);
+            ajax.addEventListener("abort", abortHandler(el), false);
+            ajax.open("POST", "/upload");
+            ajax.send(form);
+        }
+
+        function progressHandler(el) {
+            return (event) => {
+                let percent = (event.loaded / event.total) * 100;
+                el.getElementsByTagName("span")[0].innerHTML = Math.round(percent) + "%";
+            }
+        }
+
+        function completeHandler(el) {
+            return () => {
+                el.getElementsByTagName("span")[0].innerHTML = "Done";
+            }
+        }
+
+        function errorHandler(el) {
+            return () => {
+                el.getElementsByTagName("span")[0].innerHTML = "Failed";
+            }
+        }
+
+        function abortHandler(el) {
+            return () => {
+                el.getElementsByTagName("span")[0].innerHTML = "Aborted";
+            }
+        }
+    </script>
+</head>
+
+<body>
+<input type="file" id="files" multiple>
+<input type="button" value="Upload" onclick="uploadFiles()">
+<div id="uploadList"></div>
+</body>
+</html>
