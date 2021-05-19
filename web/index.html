@@ -7,53 +7,36 @@
     <script>
         function uploadFiles() {
             let el = document.getElementById("files");
-            let files = el.files;
-            for (let i = 0; i < files.length; i++) {
-                uploadFile(files[i])
+            for (let i = 0; i < el.files.length; i++) {
+                uploadFile(el.files[i], "/upload");
             }
             el.value = '';
         }
 
-        function uploadFile(file) {
+        function uploadFile(file, targetURL) {
             let el = document.createElement("div")
             el.innerHTML = "<span>0%</span> " + file.name
+
+            let span = el.getElementsByTagName("span")[0];
+            el.progressHandler = (e) => span.innerHTML = Math.round((e.loaded / e.total) * 100) + "%";
+            el.completeHandler = () => span.innerHTML = "Done";
+            el.errorHandler = () => span.innerHTML = "Failed";
+            el.abortHandler = () => span.innerHTML = "Aborted";
+
             document.getElementById("uploadList").appendChild(el);
 
             let form = new FormData();
             form.append("myFile", file);
             let ajax = new XMLHttpRequest();
-            ajax.upload.addEventListener("progress", progressHandler(el), false);
-            ajax.addEventListener("load", completeHandler(el), false);
-            ajax.addEventListener("error", errorHandler(el), false);
-            ajax.addEventListener("abort", abortHandler(el), false);
-            ajax.open("POST", "/upload");
+            ajax.upload.addEventListener("progress", el.progressHandler, false);
+            ajax.addEventListener("load", el.completeHandler, false);
+            ajax.addEventListener("error", el.errorHandler, false);
+            ajax.addEventListener("abort", el.abortHandler, false);
+            ajax.open("POST", targetURL);
             ajax.send(form);
+            return el;
         }
 
-        function progressHandler(el) {
-            return (event) => {
-                let percent = (event.loaded / event.total) * 100;
-                el.getElementsByTagName("span")[0].innerHTML = Math.round(percent) + "%";
-            }
-        }
-
-        function completeHandler(el) {
-            return () => {
-                el.getElementsByTagName("span")[0].innerHTML = "Done";
-            }
-        }
-
-        function errorHandler(el) {
-            return () => {
-                el.getElementsByTagName("span")[0].innerHTML = "Failed";
-            }
-        }
-
-        function abortHandler(el) {
-            return () => {
-                el.getElementsByTagName("span")[0].innerHTML = "Aborted";
-            }
-        }
     </script>
 </head>
 
