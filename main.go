@@ -16,10 +16,16 @@ import (
 	"strings"
 )
 
-var BasePath = "web"
+type Config struct {
+	DisableDirectoryListing bool
+	DontRemoveOnError bool
+	BasePath string
+}
 
 //go:embed web
 var web embed.FS
+
+var config = Config{}
 
 func main() {
 	mux := http.NewServeMux()
@@ -36,7 +42,12 @@ func main() {
 }
 
 func handleList(w http.ResponseWriter, r *http.Request) {
-	path, err := validatePath(r.URL.Query().Get("path"))
+	if config.DisableDirectoryListing {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("[]"))
+		return
+	}
+	path, err := validatePath(config.BasePath, r.URL.Query().Get("path"))
 	if err != nil {
 		responseError(w, http.StatusBadRequest, err.Error())
 		return
@@ -73,7 +84,7 @@ func handleList(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleUpload(w http.ResponseWriter, r *http.Request) {
-	path, err := validatePath(r.URL.Query().Get("path"))
+	path, err := validatePath(config.BasePath, r.URL.Query().Get("path"))
 	if err != nil {
 		responseError(w, http.StatusBadRequest, err.Error())
 		return
@@ -108,7 +119,7 @@ func handleUpload(w http.ResponseWriter, r *http.Request) {
 	responseError(w, http.StatusBadRequest, "unknown payload")
 }
 
-func validatePath(p string) (string, error) {
+func validatePath(base, p string) (string, error) {
 	p = filepath.Clean(p)
 	if p != "." && p != "" {
 		ss := strings.Split(p, "/")
@@ -119,7 +130,7 @@ func validatePath(p string) (string, error) {
 		}
 	}
 
-	p = filepath.Join(BasePath, p)
+	p = filepath.Join(base, p)
 	fi, err := os.Stat(p)
 	if err != nil {
 		var pe *os.PathError
@@ -169,6 +180,10 @@ func upload(path string, part *multipart.Part) error {
 		_ = f.Close()
 	}()
 	n, err := io.Copy(f, part)
+	if err != nil && !config.DontRemoveOnError {
+		// should be optional
+		_ = os.Remove(file)
+	}
 	fmt.Println(file, n, err)
 	return err
 }

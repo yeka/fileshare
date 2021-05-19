@@ -2,12 +2,16 @@
 <html lang="en">
 <head>
     <title>FileShare</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <script>
         function uploadFiles() {
-            let files = document.getElementById("files").files;
+            let el = document.getElementById("files");
+            let files = el.files;
             for (let i = 0; i < files.length; i++) {
                 uploadFile(files[i])
             }
+            el.value = '';
         }
 
         function uploadFile(file) {
